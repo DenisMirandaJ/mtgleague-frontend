@@ -11,7 +11,6 @@ export class DeckList extends React.Component {
         super(props)
         this.state = {
             cardList: [],
-            cardDic: []
         }
     }
 
@@ -21,19 +20,55 @@ export class DeckList extends React.Component {
 
     componentDidUpdate(prevProps) {
         if (this.props.cardsTextData !== prevProps.cardsTextData) {
-            console.log("refecth")
+            this.setState({
+                cardList: []
+            })
             this.fetchDeckData()
         }
     }
 
     render() {
-        let cardDic = this.getCardNamesQuantityDic()
-        let cards = this.state.cardList.map(
+        let cardsByType = this.filterCardsByType(this.state.cardList)
+        let creatures = [<b key='1'>Creatures</b>, this.getCardInfoComponentObject(cardsByType['creatures'])]
+        let spells = [<b>Spells</b>, this.getCardInfoComponentObject(cardsByType['spells'])]
+        let artifacts = [<b>Artifacts</b>, this.getCardInfoComponentObject(cardsByType['artifacts'])]
+        let planeswalkers = [<b>Planewalkers</b>, this.getCardInfoComponentObject(cardsByType['planeswalkers'])]
+        let lands = [<b>Lands</b>, this.getCardInfoComponentObject(cardsByType['lands'])]
+        let cards = [creatures, spells, artifacts, planeswalkers, lands].filter((cardsList) => {
+            return (cardsList[1].length != 0)
+        })
+        return (
+            <Container className='DeckList'>
+                Deck
+                <Row>
+                    <Col>
+                        <Table>
+                            <tbody>
+                                {cards}
+                            </tbody>
+                        </Table>
+                    </Col>
+                </Row>
+            </Container>
+        )
+    }
+
+    getCardInfoComponentObject(cardList) {
+        let cards = cardList.map(
             (cardJSON) => {
-                let cardQuantity = this.getCardQuantity(cardJSON["name"])
+                let cardName = ""
+                let cardQuantity
+                if (cardJSON["card_faces"] != null) {
+                    console.log("two faces")
+                    cardQuantity = this.getCardQuantity(cardJSON['card_faces'][0]['name'])
+                } else {
+                    console.log("one face")
+                    cardQuantity = this.getCardQuantity(cardJSON["name"])
+                    cardName = cardJSON["name"]
+                }
                 return (
                     <CardInfo
-                        key={cardJSON['name']}
+                        key={cardName}
                         cardQuantity={cardQuantity}
                         cardInfo={cardJSON}>
                     </CardInfo>
@@ -41,30 +76,7 @@ export class DeckList extends React.Component {
             }
         )
 
-        let halfLength = Math.ceil(cards.length / 2);
-        let leftTable = cards.slice(0, halfLength)
-        let rightTable = cards.slice(halfLength)
-        return (
-            <Container>
-                Deck
-                <Row>
-                    <Col>
-                        <Table>
-                            <tbody>
-                                {leftTable}
-                            </tbody>
-                        </Table>
-                    </Col>
-                    <Col>
-                        <Table>
-                            <tbody>
-                                {rightTable}
-                            </tbody>
-                        </Table>
-                    </Col>
-                </Row>
-            </Container>
-        )
+        return cards
     }
 
     getCardQuantity(cardNameFromAPI) {
@@ -80,7 +92,6 @@ export class DeckList extends React.Component {
 
     fetchDeckData() {
         let scryfallPostParameters = this.getScryfallPostParameters()
-        console.log(scryfallPostParameters)
         if (scryfallPostParameters == null || scryfallPostParameters == {}) {
             return
         }
@@ -89,16 +100,49 @@ export class DeckList extends React.Component {
             scryfallPostParameters
         ).then(res => {
             let result = res['data']['data']
-            console.log(res)
+            console.log(result)
             this.setState({
                 cardList: result
             })
         })
     }
 
+    filterCardsByType(cardsJSON) {
+        let creatures = cardsJSON.filter((card) => {
+            return card['type_line'].match(/creature/i)
+        })
+        let spells = cardsJSON.filter(card => {
+            let isInstant = card['type_line'].match(/instant/i)
+            let isSorcery = card['type_line'].match(/sorcery/i)
+            return (isInstant || isSorcery)
+        })
+        let artifacts = cardsJSON.filter(card => {
+            let isArtifact = card['type_line'].match(/artifact/i)
+            let isCreature = card['type_line'].match(/creature/i)
+            return (isArtifact && !isCreature)
+        })
+        let planeswalkers = cardsJSON.filter(card => {
+            let isPlaneswalker = card['type_line'].match(/planeswalker/i)
+            let isCreature = card['type_line'].match(/creature/i)
+            return (isPlaneswalker && !isCreature)
+        })
+        let lands = cardsJSON.filter(card => {
+            let isLand = card['type_line'].match(/land/i)
+            let isCreature = card['type_line'].match(/creature/i)
+            return (isLand && !isCreature)
+        })
+
+        return {
+            'creatures': creatures,
+            'spells': spells,
+            'artifacts': artifacts,
+            'planeswalkers': planeswalkers,
+            'lands': lands
+        }
+    }
+
     getScryfallPostParameters() {
         let cardNamesQuantityDic = this.getCardNamesQuantityDic()
-        console.log(cardNamesQuantityDic)
         let identifiers = Object.keys(cardNamesQuantityDic).map((cardName) => {
             return {
                 "name": cardName,
