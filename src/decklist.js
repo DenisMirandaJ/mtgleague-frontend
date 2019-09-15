@@ -1,42 +1,71 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import axios from 'axios'
+import { getCardNameFromJSON, getCardTypeFromJSON } from './base/utils'
 import { Table, Container, Row, Col } from 'reactstrap'
 import { CardInfo } from './CardInfo'
 import './mtg.css';
 
 
 export class DeckList extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {
-            cardList: [],
-        }
-    }
-
-    componentDidMount() {
-        this.fetchDeckData()
-    }
-
-    componentDidUpdate(prevProps) {
-        if (this.props.cardsTextData !== prevProps.cardsTextData) {
-            this.setState({
-                cardList: []
-            })
-            this.fetchDeckData()
-        }
-    }
 
     render() {
-        let cardsByType = this.filterCardsByType(this.state.cardList)
-        let creatures = [<b key='1'>Creatures</b>, this.getCardInfoComponentObject(cardsByType['creatures'])]
-        let spells = [<b>Spells</b>, this.getCardInfoComponentObject(cardsByType['spells'])]
-        let artifacts = [<b>Artifacts</b>, this.getCardInfoComponentObject(cardsByType['artifacts'])]
-        let planeswalkers = [<b>Planewalkers</b>, this.getCardInfoComponentObject(cardsByType['planeswalkers'])]
-        let lands = [<b>Lands</b>, this.getCardInfoComponentObject(cardsByType['lands'])]
-        let cards = [creatures, spells, artifacts, planeswalkers, lands].filter((cardsList) => {
+        let cardsByType = this.filterCardsByType(this.props.mainDeck)
+
+        let creatureCards = this.getCardInfoComponentObject(cardsByType['creatures'])
+        let creatureCardsQuantity = cardsByType['creatures'].reduce((a, b) => +a + +b.quantity, 0)
+        let creatures = [
+            <tr key="1"><b>Creatures ({creatureCardsQuantity})</b></tr>,
+            creatureCards
+        ]
+
+        let spellCards = this.getCardInfoComponentObject(cardsByType['spells'])
+        let spellCardsQuantity = cardsByType['spells'].reduce((a, b) => +a + +b.quantity, 0)
+        let spells = [
+            <tr><b>Spells ({spellCardsQuantity})</b></tr>,
+            spellCards
+        ]
+        let artifactCards = this.getCardInfoComponentObject(cardsByType['artifacts'])
+        let artifactCardsQuantity = cardsByType['artifacts'].reduce((a, b) => +a + +b.quantity, 0)
+        let artifacts = [
+            <tr><b>Artifacts ({artifactCardsQuantity})</b></tr>,
+            artifactCards
+        ]
+        let planeswalkerCards = this.getCardInfoComponentObject(cardsByType['planeswalkers'])
+        let planeswalkerCardsQuantity = cardsByType['planeswalkers'].reduce((a, b) => +a + +b.quantity, 0)
+        let planeswalkers = [
+            <tr><b>Planewalkers ({planeswalkerCardsQuantity})</b></tr>,
+            planeswalkerCards
+        ]
+        let enchantmentsCards = this.getCardInfoComponentObject(cardsByType['enchantments'])
+        let enchantmentCardsQuantity = cardsByType['enchantments'].reduce((a, b) => +a + +b.quantity, 0)
+        let enchantments = [
+            <tr><b>Enchantments ({enchantmentCardsQuantity})</b></tr>,
+            enchantmentsCards
+        ]
+        let landCards = this.getCardInfoComponentObject(cardsByType['lands'])
+        let landCardsQuantity = cardsByType['lands'].reduce((a, b) => +a + +b.quantity, 0)
+        let lands = [
+            <tr><b>Lands ({landCardsQuantity})</b></tr>,
+            landCards
+        ]
+        let otherCards = this.getCardInfoComponentObject(cardsByType['others'])
+        let otherCardsQuantity = cardsByType['others'].reduce((a, b) => +a + +b.quantity, 0)
+        let others = [
+            <tr><b>Others ({otherCardsQuantity})</b></tr>,
+            otherCards
+        ]
+        let sideDeckCards = this.getCardInfoComponentObject(this.props.sideDeck)
+        let sideDeckCardsQuantity = this.props.sideDeck.reduce((a, b) => +a + +b.quantity, 0)
+        let sideDeck = [
+            <tr><b>Side Deck ({sideDeckCardsQuantity})</b></tr>,
+            sideDeckCards
+        ]
+        let cards = [creatures, spells, artifacts, planeswalkers, enchantments, others, lands, sideDeck].filter((cardsList) => {
             return (cardsList[1].length != 0)
         })
+
+        // + operator for casting to Number
+        let cardsInMainDeck = this.props.mainDeck.reduce((a, b) => +a + +b.quantity, 0)
+        let cardsInSideDeck = this.props.sideDeck.reduce((a, b) => +a + +b.quantity, 0)
         return (
             <Container className='DeckList'>
                 Deck
@@ -45,6 +74,11 @@ export class DeckList extends React.Component {
                         <Table>
                             <tbody>
                                 {cards}
+                                <tr>
+                                    <th></th>
+                                    <th></th>
+                                    <th>{(cardsInMainDeck + cardsInSideDeck) + " cards total"}</th>
+                                </tr>
                             </tbody>
                         </Table>
                     </Col>
@@ -55,22 +89,14 @@ export class DeckList extends React.Component {
 
     getCardInfoComponentObject(cardList) {
         let cards = cardList.map(
-            (cardJSON) => {
-                let cardName = ""
-                let cardQuantity
-                if (cardJSON["card_faces"] != null) {
-                    console.log("two faces")
-                    cardQuantity = this.getCardQuantity(cardJSON['card_faces'][0]['name'])
-                } else {
-                    console.log("one face")
-                    cardQuantity = this.getCardQuantity(cardJSON["name"])
-                    cardName = cardJSON["name"]
-                }
+            (card) => {
+                let cardName = getCardNameFromJSON(card['cardJSON'])
+                let cardQuantity = card['quantity']
                 return (
                     <CardInfo
                         key={cardName}
                         cardQuantity={cardQuantity}
-                        cardInfo={cardJSON}>
+                        cardInfo={card['cardJSON']}>
                     </CardInfo>
                 )
             }
@@ -79,57 +105,39 @@ export class DeckList extends React.Component {
         return cards
     }
 
-    getCardQuantity(cardNameFromAPI) {
-        let cardDic = this.getCardNamesQuantityDic()
-        let card = Object.keys(cardDic).filter((cardName) => {
-            let cardNameFromUser = cardName.toLowerCase().replace(/\s/g, '')
-            cardNameFromAPI = cardNameFromAPI.toLowerCase().replace(/\s/g, '')
-            return (cardNameFromUser === cardNameFromAPI)
-        })[0]
-
-        return cardDic[card]
-    }
-
-    fetchDeckData() {
-        let scryfallPostParameters = this.getScryfallPostParameters()
-        if (scryfallPostParameters == null || scryfallPostParameters == {}) {
-            return
-        }
-        axios.post(
-            'https://api.scryfall.com/cards/collection',
-            scryfallPostParameters
-        ).then(res => {
-            let result = res['data']['data']
-            console.log(result)
-            this.setState({
-                cardList: result
-            })
+    filterCardsByType(cards) {
+        let creatures = cards.filter((card) => {
+            return getCardTypeFromJSON(card['cardJSON']).match(/creature/i)
         })
-    }
-
-    filterCardsByType(cardsJSON) {
-        let creatures = cardsJSON.filter((card) => {
-            return card['type_line'].match(/creature/i)
-        })
-        let spells = cardsJSON.filter(card => {
-            let isInstant = card['type_line'].match(/instant/i)
-            let isSorcery = card['type_line'].match(/sorcery/i)
+        let spells = cards.filter(card => {
+            let isInstant = getCardTypeFromJSON(card['cardJSON']).match(/instant/i)
+            let isSorcery = getCardTypeFromJSON(card['cardJSON']).match(/sorcery/i)
             return (isInstant || isSorcery)
         })
-        let artifacts = cardsJSON.filter(card => {
-            let isArtifact = card['type_line'].match(/artifact/i)
-            let isCreature = card['type_line'].match(/creature/i)
+        let artifacts = cards.filter(card => {
+            let isArtifact = getCardTypeFromJSON(card['cardJSON']).match(/artifact/i)
+            let isCreature = getCardTypeFromJSON(card['cardJSON']).match(/creature/i)
             return (isArtifact && !isCreature)
         })
-        let planeswalkers = cardsJSON.filter(card => {
-            let isPlaneswalker = card['type_line'].match(/planeswalker/i)
-            let isCreature = card['type_line'].match(/creature/i)
+        let planeswalkers = cards.filter(card => {
+            let isPlaneswalker = getCardTypeFromJSON(card['cardJSON']).match(/planeswalker/i)
+            let isCreature = getCardTypeFromJSON(card['cardJSON']).match(/creature/i)
             return (isPlaneswalker && !isCreature)
         })
-        let lands = cardsJSON.filter(card => {
-            let isLand = card['type_line'].match(/land/i)
-            let isCreature = card['type_line'].match(/creature/i)
+        let lands = cards.filter(card => {
+            let isLand = getCardTypeFromJSON(card['cardJSON']).match(/land/i)
+            let isCreature = getCardTypeFromJSON(card['cardJSON']).match(/creature/i)
             return (isLand && !isCreature)
+        })
+        let enchantments = cards.filter(card => {
+            let isEnchantment = getCardTypeFromJSON(card['cardJSON']).match(/enchantment/i)
+            let isCreature = getCardTypeFromJSON(card['cardJSON']).match(/creature/i)
+            return (isEnchantment && !isCreature)
+        })
+
+        //Cards not found on scryfall
+        let others = cards.filter((card) => {
+            return getCardTypeFromJSON(card['cardJSON']).match(/no_type/i)
         })
 
         return {
@@ -137,37 +145,9 @@ export class DeckList extends React.Component {
             'spells': spells,
             'artifacts': artifacts,
             'planeswalkers': planeswalkers,
+            'enchantments': enchantments,
+            'others': others,
             'lands': lands
         }
     }
-
-    getScryfallPostParameters() {
-        let cardNamesQuantityDic = this.getCardNamesQuantityDic()
-        let identifiers = Object.keys(cardNamesQuantityDic).map((cardName) => {
-            return {
-                "name": cardName,
-            }
-        })
-        return { identifiers }
-    }
-
-    getCardNamesQuantityDic() {
-        if (this.props.cardsTextData == null || this.props.cardsTextData == '') {
-            return {}
-        }
-        let _carNameDic = {}
-        let lines = this.props.cardsTextData.split(/\r?\n/g)
-        lines.forEach(line => {
-            let matches = line.match(/([0-9]+) ([a-zA-Z0-9\s.,']+)/)
-            if (matches == null) {
-                return
-            }
-            let quantity = matches[1]
-            let cardName = matches[2].toLowerCase()
-            _carNameDic[cardName] = quantity
-        });
-
-        return _carNameDic
-    }
-
 }

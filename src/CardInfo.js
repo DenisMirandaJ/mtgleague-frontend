@@ -1,5 +1,4 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { Button, Modal, ModalBody, ModalHeader } from 'reactstrap'
 import './mtg.css';
 
@@ -14,31 +13,60 @@ export class CardInfo extends React.Component {
     }
 
     render() {
+        let cardNotFound = false
+        let cardName = ''
         let cardImagesURL = null
         let cardSymbols = null
+        let cardLink = null
         if (this.props.cardInfo['card_faces'] != null) {
             cardImagesURL = <div>
-                <img width="100%" src={this.props.cardInfo['card_faces'][0]['image_uris']["normal"]} />
-                <img width="100%" src={this.props.cardInfo['card_faces'][1]['image_uris']["normal"]} />
+                <img width="100%" alt="Not Found" src={this.props.cardInfo['card_faces'][0]['image_uris']["normal"]} />
+                <img width="100%" alt="Not Found" src={this.props.cardInfo['card_faces'][1]['image_uris']["normal"]} />
             </div>
             cardSymbols = this.getCardManaCost(this.props.cardInfo['card_faces'][0]['mana_cost'])
-        } else {
-            cardImagesURL = <img width="100%" src={this.props.cardInfo['image_uris']["normal"]} />
+            cardName = this.props.cardInfo['card_faces'][0]['name']
+            cardLink = <Button color='link' onClick={this.toggle}>{cardName}</Button>
+        } else if (this.props.cardInfo['image_uris'] != null) {
+            cardImagesURL = <img width="100%" alt="Not Found" src={this.props.cardInfo['image_uris']["normal"]} />
             cardSymbols = this.getCardManaCost(this.props.cardInfo['mana_cost'])
+            cardName = this.props.cardInfo["name"]
+            cardLink = <Button color='link' onClick={this.toggle}>{cardName}</Button>
+        } else {
+            cardName = this.props.cardInfo["name"]
+            cardImagesURL = <img width="100%" alt="Not Found" src='' />
+            cardLink = cardName
+            cardNotFound = true
         }
-        return (
-            <tr>
-                <th>{this.props.cardQuantity}</th>
-                <th><Button color='link' onClick={this.toggle}>{this.props.cardInfo["name"]}</Button></th>
-                <th>{cardSymbols}</th>
-                <Modal isOpen={this.state.modal} toggle={this.toggle} className={this.props.className}>
-                    <ModalHeader toggle={this.toggle}></ModalHeader>
-                    <ModalBody>
-                        {cardImagesURL}
-                    </ModalBody>
-                </Modal>
-            </tr>
-        )
+
+        if (cardNotFound) {
+            return (
+                <tr class='table-danger'>
+                    <th>{this.props.cardQuantity}</th>
+                    <th >{cardLink}</th>
+                    <th>{cardSymbols}</th>
+                    <Modal isOpen={this.state.modal} toggle={this.toggle} className={this.props.className}>
+                        <ModalHeader toggle={this.toggle}></ModalHeader>
+                        <ModalBody>
+                            {cardImagesURL}
+                        </ModalBody>
+                    </Modal>
+                </tr>
+            )
+        } else {
+            return (
+                <tr>
+                    <th>{this.props.cardQuantity}</th>
+                    <th >{cardLink}</th>
+                    <th>{cardSymbols}</th>
+                    <Modal isOpen={this.state.modal} toggle={this.toggle} className={this.props.className}>
+                        <ModalHeader toggle={this.toggle}></ModalHeader>
+                        <ModalBody>
+                            {cardImagesURL}
+                        </ModalBody>
+                    </Modal>
+                </tr>
+            )
+        }
     }
 
 
