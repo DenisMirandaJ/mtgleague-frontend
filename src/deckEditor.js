@@ -1,6 +1,7 @@
 import React from 'react';
-import { Button, Spinner, Nav, NavItem, NavLink, TabContent, TabPane, Container, Label, Input } from 'reactstrap';
+import { Button, Alert, Nav, NavItem, NavLink, TabContent, TabPane, Container, Row, Col, Label, Input } from 'reactstrap';
 import { DeckList } from './decklist'
+import { DeckInputComponent } from './deckInputComponent'
 import { getCardNameFromJSON } from './base/utils'
 import classnames from 'classnames';
 import Fuse from 'fuse.js'
@@ -14,10 +15,14 @@ export class DeckEditor extends React.Component {
             mainDeckCardList: [],
             sideDeckCardList: [],
             activeTab: 'maindeck',
+            deckName: '',
+            showAlert: false
         }
 
         this.mainDeckInput = React.createRef()
         this.sideDeckInput = React.createRef()
+        this.deckName = React.createRef()
+        this.selectedPlayer = React.createRef()
         this.showLoadingSpinner = false
     }
 
@@ -32,11 +37,31 @@ export class DeckEditor extends React.Component {
     handleUpdateTextArea(event) {
         event.preventDefault()
         this.fetchDeckData()
+        this.setState({
+            deckName: this.deckName.current.value,
+            showAlert: false
+        })
     }
 
     render() {
         return (
-            <div>
+            <Container>
+                <h1 style={{ "padding-bottom": "5px" }}>Deck Editor</h1>
+                <Row style={{ "padding-bottom": "10px" }}>
+                    <Col>
+                        <Label>Deck Name</Label>
+                        <Input
+                            type="textarea"
+                            rows="1"
+                            innerRef={this.deckName}
+                            noresize='true'
+                        />
+                    </Col>
+                    <Col>
+                        <Label>Player</Label>
+                        <Input type="textarea" rows="1" innerRef={this.selectedPlayer} />
+                    </Col>
+                </Row>
                 <Nav tabs>
                     <NavItem size="lg">
                         <NavLink
@@ -53,58 +78,78 @@ export class DeckEditor extends React.Component {
                             className={classnames({ active: this.state.activeTab === 'sidedeck' })}
                             onClick={() => { this.toggleTab('sidedeck'); }}
                         >
-                            Side Deck
+                            Sideboard
                         </NavLink>
                     </NavItem>
                 </Nav>
                 <TabContent activeTab={this.state.activeTab}>
                     <TabPane tabId="maindeck">
-                        <Container>
-                            <Label for="deck-editor">Deck Editor</Label>
-                            <Input
-                                type="textarea"
-                                innerRef={this.mainDeckInput}
-                                rows='17'
-                                cols='10'
-                                noresize='true'
-                            />
-                            <Button
-                                type='submit'
-                                color='primary'
-                                onClick={this.handleUpdateTextArea.bind(this)}
-                                size="lg"
-                                block
-                            >
-                                <Spinner size="lg" color="dark  " />{' '}
-                                Submit
+                        <Input
+                            type="textarea"
+                            innerRef={this.mainDeckInput}
+                            rows='17'
+                            cols='10'
+                            noresize='true'
+                            placeholder={'4 shock\n3 x Dovin\'s Veto'}
+                        />
+                        {this.state.showAlert &&
+                            <Alert color="success">
+                                Deck was saved on the database
+                        </Alert>}
+                        <Button
+                            type='submit'
+                            color='primary'
+                            size="lg"
+                            onClick={this.handleUpdateTextArea.bind(this)}
+                            block
+                        >
+                            Preview
                             </Button>
-                        </Container>
+                        <Button
+                            type='submit'
+                            color='primary'
+                            size="lg"
+                            onClick={this.saveDeckData.bind(this)}
+                            block
+                        >
+                            Submit
+                            </Button>
                     </TabPane>
                     <TabPane tabId="sidedeck">
-                        <Container>
-                            <Label for="deck-editor">Deck Editor</Label>
-                            <Input
-                                type="textarea"
-                                innerRef={this.sideDeckInput}
-                                rows='17'
-                                cols='10'
-                                noresize='true'
-                            />
-                            <Button
-                                type='submit'
-                                color='primary'
-                                size="lg"
-                                onClick={this.handleUpdateTextArea.bind(this)}
-                                block
-                            >
-                                <Spinner size="sm" color="secondary" />
-                                Submit
+                        <Input
+                            type="textarea"
+                            innerRef={this.sideDeckInput}
+                            rows='17'
+                            cols='10'
+                            noresize='true'
+                            placeholder={'4 Lightning Bolt\n3 x Aether Vial'}
+                        />
+                        {this.state.showAlert &&
+                            <Alert color="success">
+                                Deck was saved on the database
+                        </Alert>}
+                        <Button
+                            type='submit'
+                            color='primary'
+                            size="lg"
+                            onClick={this.handleUpdateTextArea.bind(this)}
+                            block
+                        >
+                            Preview
                             </Button>
-                        </Container>
+                        <Button
+                            type='submit'
+                            color='primary'
+                            size="lg"
+                            onClick={this.saveDeckData.bind(this)}
+                            block
+                        >
+                            Submit
+                            </Button>
                     </TabPane>
                 </TabContent>
                 <DeckList mainDeck={this.state.mainDeckCardList} sideDeck={this.state.sideDeckCardList} />
-            </div>
+            </Container>
         );
     }
 
@@ -198,5 +243,40 @@ export class DeckEditor extends React.Component {
         });
 
         return _carNameDic
+    }
+
+    saveDeckData() {
+
+        let mainDeck = this.mainDeckInput.current === null ? '' : this.mainDeckInput.current.value
+        let sideDeck = this.sideDeckInput.current === null ? '' : this.sideDeckInput.current.value
+        let deckName = this.deckName.current === null ? '' : this.deckName.current.value
+        let selectedPlayer = this.selectedPlayer.current === null ? '' : this.selectedPlayer.current.value
+        if (this.state.mainDeckCardList.length == 0 ||
+            deckName == '' ||
+            selectedPlayer == '') {
+            alert("Please fill all fields")
+            return
+        }
+
+        let postBody = {
+            'name': deckName,
+            'elo': 1200,
+            'maindeck': { 'data': this.state.mainDeckCardList },
+            'sideboard': { 'data': this.state.sideDeckCardList }
+        }
+
+        this.setState({
+            showAlert: false
+        })
+        axios.post(
+            'http://[::1]:3001/players',
+            postBody
+        ).then((res) => {
+            console.log(res)
+            this.setState({
+                showAlert: true
+            })
+            setTimeout(() => { this.setState({ showAlert: false }) }, 10000)
+        })
     }
 } 
