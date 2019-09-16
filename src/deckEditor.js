@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button, Alert, Nav, NavItem, NavLink, TabContent, TabPane, Container, Row, Col, Label, Input } from 'reactstrap';
 import { DeckList } from './decklist'
-import { DeckInputComponent } from './deckInputComponent'
 import { getCardNameFromJSON } from './base/utils'
 import classnames from 'classnames';
 import Fuse from 'fuse.js'
