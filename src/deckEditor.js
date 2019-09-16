@@ -45,8 +45,8 @@ export class DeckEditor extends React.Component {
     render() {
         return (
             <Container>
-                <h1 style={{ "padding-bottom": "5px" }}>Deck Editor</h1>
-                <Row style={{ "padding-bottom": "10px" }}>
+                <h1 style={{ "paddingBottom": "5px" }}>Deck Editor</h1>
+                <Row style={{ "paddingBottom": "10px" }}>
                     <Col>
                         <Label>Deck Name</Label>
                         <Input
@@ -258,7 +258,8 @@ export class DeckEditor extends React.Component {
         }
 
         let postBody = {
-            'name': deckName,
+            'deckName': deckName,
+            'playerName': selectedPlayer,
             'elo': 1200,
             'maindeck': { 'data': this.state.mainDeckCardList },
             'sideboard': { 'data': this.state.sideDeckCardList }
@@ -268,7 +269,7 @@ export class DeckEditor extends React.Component {
             showAlert: false
         })
         axios.post(
-            'http://[::1]:3001/players',
+            'http://190.44.74.23:3001/players',
             postBody
         ).then((res) => {
             console.log(res)
