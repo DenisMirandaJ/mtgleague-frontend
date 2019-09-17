@@ -14,3 +14,12 @@ export var getCardTypeFromJSON = (cardJSON) => {
     }
     return 'no_type'
 }
+
+export var getCardPriceFromJSON = (cardJSON) => {
+    if (cardJSON['prices'] == null) {
+        return ''
+    } else {
+        return cardJSON['prices']['usd']
+    }
+}
+

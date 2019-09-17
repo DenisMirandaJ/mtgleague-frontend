@@ -33,6 +33,12 @@ export class DeckEditor extends React.Component {
         }
     }
 
+    componentDidUpdate(prevProps) {
+        if (prevProps === this.props) {
+            return
+        }
+    }
+
     handleUpdateTextArea(event) {
         event.preventDefault()
         this.fetchDeckData()
@@ -44,11 +50,12 @@ export class DeckEditor extends React.Component {
 
     render() {
         return (
-            <Container>
-                <h1 style={{ "paddingBottom": "5px" }}>Deck Editor</h1>
+            <Container inline-block>
+                <br></br>
+                <h1 style={{ "paddingBottom": "5px", paddingTop: "5x" }}>Deck Editor</h1>
                 <Row style={{ "paddingBottom": "10px" }}>
                     <Col>
-                        <Label>Deck Name</Label>
+                        <Label>Deck Name*</Label>
                         <Input
                             type="textarea"
                             rows="1"
@@ -57,8 +64,19 @@ export class DeckEditor extends React.Component {
                         />
                     </Col>
                     <Col>
-                        <Label>Player</Label>
+                        <Label>Player*</Label>
                         <Input type="textarea" rows="1" innerRef={this.selectedPlayer} />
+                    </Col>
+                    <Col>
+                        <Label>Archetype</Label>
+                        <Input type='select'>
+                            <option>Aggro</option>
+                            <option>Control</option>
+                            <option>Midrange</option>
+                            <option>Tempo</option>
+                            <option>Combo</option>
+                            <option>Demases por definir...</option>
+                        </Input>
                     </Col>
                 </Row>
                 <Nav tabs>
@@ -68,7 +86,7 @@ export class DeckEditor extends React.Component {
                             className={classnames({ active: this.state.activeTab === 'maindeck' })}
                             onClick={() => { this.toggleTab('maindeck'); }}
                         >
-                            Main Deck
+                            Main Deck*
                         </NavLink>
                     </NavItem>
                     <NavItem>
@@ -91,28 +109,6 @@ export class DeckEditor extends React.Component {
                             noresize='true'
                             placeholder={'4 shock\n3 x Dovin\'s Veto'}
                         />
-                        {this.state.showAlert &&
-                            <Alert color="success">
-                                Deck was saved on the database
-                        </Alert>}
-                        <Button
-                            type='submit'
-                            color='primary'
-                            size="lg"
-                            onClick={this.handleUpdateTextArea.bind(this)}
-                            block
-                        >
-                            Preview
-                            </Button>
-                        <Button
-                            type='submit'
-                            color='primary'
-                            size="lg"
-                            onClick={this.saveDeckData.bind(this)}
-                            block
-                        >
-                            Submit
-                            </Button>
                     </TabPane>
                     <TabPane tabId="sidedeck">
                         <Input
@@ -123,31 +119,31 @@ export class DeckEditor extends React.Component {
                             noresize='true'
                             placeholder={'4 Lightning Bolt\n3 x Aether Vial'}
                         />
-                        {this.state.showAlert &&
-                            <Alert color="success">
-                                Deck was saved on the database
-                        </Alert>}
-                        <Button
-                            type='submit'
-                            color='primary'
-                            size="lg"
-                            onClick={this.handleUpdateTextArea.bind(this)}
-                            block
-                        >
-                            Preview
-                            </Button>
-                        <Button
-                            type='submit'
-                            color='primary'
-                            size="lg"
-                            onClick={this.saveDeckData.bind(this)}
-                            block
-                        >
-                            Submit
-                            </Button>
                     </TabPane>
                 </TabContent>
-                <DeckList mainDeck={this.state.mainDeckCardList} sideDeck={this.state.sideDeckCardList} />
+                {this.state.showAlert &&
+                    <Alert color="success">
+                        Deck was saved on the database
+                    </Alert>}
+                <Button
+                    type='submit'
+                    color='primary'
+                    size="lg"
+                    onClick={this.handleUpdateTextArea.bind(this)}
+                    block
+                >
+                    Preview
+                            </Button>
+                <Button
+                    type='submit'
+                    color='primary'
+                    size="lg"
+                    onClick={this.saveDeckData.bind(this)}
+                    block
+                >
+                    Submit
+                        </Button>
+                <DeckList style={{ paddingTop: "10px" }} mainDeck={this.state.mainDeckCardList} sideDeck={this.state.sideDeckCardList} />
             </Container>
         );
     }
@@ -253,7 +249,7 @@ export class DeckEditor extends React.Component {
         if (this.state.mainDeckCardList.length == 0 ||
             deckName == '' ||
             selectedPlayer == '') {
-            alert("Please fill all fields")
+            alert("Please fill all required* fields")
             return
         }
 

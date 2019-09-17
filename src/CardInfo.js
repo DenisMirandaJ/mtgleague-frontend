@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Modal, ModalBody, ModalHeader } from 'reactstrap'
+import {getCardPriceFromJSON} from './base/utils'
 import './mtg.css';
 
 export class CardInfo extends React.Component {
@@ -58,6 +59,7 @@ export class CardInfo extends React.Component {
                     <th>{this.props.cardQuantity}</th>
                     <th >{cardLink}</th>
                     <th>{cardSymbols}</th>
+                    <th>{getCardPriceFromJSON(this.props.cardInfo)}USD</th>
                     <Modal isOpen={this.state.modal} toggle={this.toggle} className={this.props.className}>
                         <ModalHeader toggle={this.toggle}></ModalHeader>
                         <ModalBody>
