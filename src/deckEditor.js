@@ -60,7 +60,7 @@ export class DeckEditor extends React.Component {
 
     render() {
         return (
-            <Container inline-block>
+            <div>
                 <h1 style={{ paddingBottom: "10px", paddingTop: "2%" }}>Deck Editor</h1>
                 <Row style={{ paddingBottom: "2%" }}>
                     <Col>
@@ -176,8 +176,7 @@ export class DeckEditor extends React.Component {
                         </Collapse>
                     </div>
                 }
-                {/* <DeckViewer/> */}
-            </Container>
+            </div>
         );
     }
 

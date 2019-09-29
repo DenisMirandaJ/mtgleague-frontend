@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import {DeckEditor} from './deckEditor'
+import {MainPage} from './mainpage'
 
-ReactDOM.render(<DeckEditor />, document.getElementById('root'));
+ReactDOM.render(<MainPage />, document.getElementById('root'));
