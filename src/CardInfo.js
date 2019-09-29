@@ -45,6 +45,7 @@ export class CardInfo extends React.Component {
                     <th>{this.props.cardQuantity}</th>
                     <th >{cardLink}</th>
                     <th>{cardSymbols}</th>
+                    <th>{getCardPriceFromJSON(this.props.cardInfo)*this.props.cardQuantity} USD</th>
                     <Modal isOpen={this.state.modal} toggle={this.toggle} className={this.props.className}>
                         <ModalHeader toggle={this.toggle}></ModalHeader>
                         <ModalBody>
@@ -59,7 +60,7 @@ export class CardInfo extends React.Component {
                     <th>{this.props.cardQuantity}</th>
                     <th >{cardLink}</th>
                     <th>{cardSymbols}</th>
-                    <th>{getCardPriceFromJSON(this.props.cardInfo)}USD</th>
+                    <th>{(getCardPriceFromJSON(this.props.cardInfo)*this.props.cardQuantity).toFixed(2)} USD</th>
                     <Modal isOpen={this.state.modal} toggle={this.toggle} className={this.props.className}>
                         <ModalHeader toggle={this.toggle}></ModalHeader>
                         <ModalBody>

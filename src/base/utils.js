@@ -17,7 +17,7 @@ export var getCardTypeFromJSON = (cardJSON) => {
 
 export var getCardPriceFromJSON = (cardJSON) => {
     if (cardJSON['prices'] == null) {
-        return ''
+        return "0"
     } else {
         return cardJSON['prices']['usd']
     }

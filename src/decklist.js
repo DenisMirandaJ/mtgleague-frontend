@@ -1,11 +1,14 @@
 import React from 'react';
-import { getCardNameFromJSON, getCardTypeFromJSON } from './base/utils'
+import { getCardNameFromJSON, getCardTypeFromJSON, getCardPriceFromJSON } from './base/utils'
 import { Table, Container, Row, Col } from 'reactstrap'
 import { CardInfo } from './CardInfo'
 import './mtg.css';
 
 
 export class DeckList extends React.Component {
+    constructor(props) {
+        super(props)
+    }
 
     render() {
         let cardsByType = this.filterCardsByType(this.props.mainDeck)
@@ -63,18 +66,28 @@ export class DeckList extends React.Component {
             return (cardsList[1].length != 0)
         })
 
+        let totalPriceMainDeck = this.props.mainDeck.reduce((a, b) => +a + +getCardPriceFromJSON(b['cardJSON']) * b.quantity, 0)
+        let totalPriceSideDeck = this.props.sideDeck.reduce((a, b) => +a + +getCardPriceFromJSON(b['cardJSON']) * b.quantity, 0)
+        let totalDeckPrice = +(totalPriceMainDeck + totalPriceSideDeck).toFixed(2)
         // + operator for casting to Number
         let cardsInMainDeck = this.props.mainDeck.reduce((a, b) => +a + +b.quantity, 0)
         let cardsInSideDeck = this.props.sideDeck.reduce((a, b) => +a + +b.quantity, 0)
         return (
             <Container className='DeckList'>
-                Deck
+                <Row>
+                    <Col>
+                        <p style={{ textAlign: 'right' }} className="text-info"><b>
+                            <h2>{totalDeckPrice} USD</h2>
+                        </b></p>
+                    </Col>
+                </Row>
                 <Row>
                     <Col>
                         <Table>
                             <tbody>
                                 {cards}
                                 <tr>
+                                    <th></th>
                                     <th></th>
                                     <th></th>
                                     <th>{(cardsInMainDeck + cardsInSideDeck) + " cards total"}</th>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Button, Alert, Nav, NavItem, NavLink, TabContent, TabPane, Container, Row, Col, Label, Input } from 'reactstrap';
+import { Button, Collapse, Alert, Nav, NavItem, NavLink, TabContent, TabPane, Container, Row, Col, Label, Input } from 'reactstrap';
 import { DeckList } from './decklist'
 import { getCardNameFromJSON } from './base/utils'
+import {DeckViewer} from './deckVisualizator'
 import classnames from 'classnames';
 import Fuse from 'fuse.js'
 import axios from 'axios'
@@ -13,15 +14,20 @@ export class DeckEditor extends React.Component {
         this.state = {
             mainDeckCardList: [],
             sideDeckCardList: [],
+            proxyDeckCardList: [],
             activeTab: 'maindeck',
             deckName: '',
-            showAlert: false
+            showAlert: false,
+            collapse: false,
+            showProxyErrorAlert: false
         }
 
         this.mainDeckInput = React.createRef()
         this.sideDeckInput = React.createRef()
         this.deckName = React.createRef()
         this.selectedPlayer = React.createRef()
+        this.proxyes = React.createRef()
+
         this.showLoadingSpinner = false
     }
 
@@ -31,6 +37,10 @@ export class DeckEditor extends React.Component {
                 activeTab: tab
             });
         }
+    }
+
+    toggleProxyes() {
+        this.setState(state => ({ collapse: !state.collapse }));
     }
 
     componentDidUpdate(prevProps) {
@@ -51,32 +61,19 @@ export class DeckEditor extends React.Component {
     render() {
         return (
             <Container inline-block>
-                <br></br>
-                <h1 style={{ "paddingBottom": "5px", paddingTop: "5x" }}>Deck Editor</h1>
-                <Row style={{ "paddingBottom": "10px" }}>
+                <h1 style={{ paddingBottom: "10px", paddingTop: "2%" }}>Deck Editor</h1>
+                <Row style={{ paddingBottom: "2%" }}>
                     <Col>
                         <Label>Deck Name*</Label>
                         <Input
                             type="textarea"
                             rows="1"
                             innerRef={this.deckName}
-                            noresize='true'
                         />
                     </Col>
                     <Col>
                         <Label>Player*</Label>
                         <Input type="textarea" rows="1" innerRef={this.selectedPlayer} />
-                    </Col>
-                    <Col>
-                        <Label>Archetype</Label>
-                        <Input type='select'>
-                            <option>Aggro</option>
-                            <option>Control</option>
-                            <option>Midrange</option>
-                            <option>Tempo</option>
-                            <option>Combo</option>
-                            <option>Demases por definir...</option>
-                        </Input>
                     </Col>
                 </Row>
                 <Nav tabs>
@@ -98,6 +95,16 @@ export class DeckEditor extends React.Component {
                             Sideboard
                         </NavLink>
                     </NavItem>
+                    <NavItem size="lg">
+                        <NavLink
+                            size="lg"
+                            className={classnames({ active: this.state.activeTab === 'proxyes' })}
+                            onClick={() => { this.toggleTab('proxyes'); }}
+                        >
+                            Proxys
+                        </NavLink>
+
+                    </NavItem>
                 </Nav>
                 <TabContent activeTab={this.state.activeTab}>
                     <TabPane tabId="maindeck">
@@ -118,6 +125,16 @@ export class DeckEditor extends React.Component {
                             cols='10'
                             noresize='true'
                             placeholder={'4 Lightning Bolt\n3 x Aether Vial'}
+                        />
+                    </TabPane>
+                    <TabPane tabId="proxyes">
+                        <Input
+                            type="textarea"
+                            innerRef={this.proxyes}
+                            rows='17'
+                            cols='10'
+                            noresize='true'
+                            placeholder={'Enter the proxy cards in your deck'}
                         />
                     </TabPane>
                 </TabContent>
@@ -142,8 +159,24 @@ export class DeckEditor extends React.Component {
                     block
                 >
                     Submit
-                        </Button>
-                <DeckList style={{ paddingTop: "10px" }} mainDeck={this.state.mainDeckCardList} sideDeck={this.state.sideDeckCardList} />
+                </Button>
+                <DeckList style={{ paddingTop: "2%" }} mainDeck={this.state.mainDeckCardList} sideDeck={this.state.sideDeckCardList} />
+                {
+                    this.state.showProxyErrorAlert &&
+                    <Alert color="warning">
+                        Invalid proxy list
+                    </Alert>
+                }
+                {
+                    !this.state.showProxyErrorAlert &&
+                    <div>
+                        <Button color="link" onClick={this.toggleProxyes.bind(this)} style={{ marginBottom: '1rem' }}>Show Proxy Cards</Button>
+                        <Collapse isOpen={this.state.collapse}>
+                            <DeckList style={{ paddingTop: "2%" }} mainDeck={this.state.proxyDeckCardList} sideDeck={[]} />
+                        </Collapse>
+                    </div>
+                }
+                {/* <DeckViewer/> */}
             </Container>
         );
     }
@@ -151,6 +184,8 @@ export class DeckEditor extends React.Component {
     fetchDeckData() {
         let mainDeckScryfallPostParameters = this.getScryfallPostParameters(this.mainDeckInput.current.value)
         let sideDeckScryfallPostParameters = this.getScryfallPostParameters(this.sideDeckInput.current.value)
+        let proxyDeckScryfallPostParameters = this.getScryfallPostParameters(this.proxyes.current.value)
+
         if (mainDeckScryfallPostParameters === null ||
             mainDeckScryfallPostParameters == [] ||
             mainDeckScryfallPostParameters.identifier == []) {
@@ -181,6 +216,23 @@ export class DeckEditor extends React.Component {
             let cardNamesQuantityDic = this.getCardNamesQuantityDic(this.sideDeckInput.current.value)
             this.setState({
                 sideDeckCardList: this.constructCardJSONQuantityObject(cardNamesQuantityDic, result)
+            })
+        })
+
+        if (!this.checkProxysValidity()) {
+            this.setState({ showProxyErrorAlert: true })
+            return
+        } else {
+            this.setState({ showProxyErrorAlert: false })
+        }
+        axios.post(
+            'https://api.scryfall.com/cards/collection',
+            proxyDeckScryfallPostParameters
+        ).then(res => {
+            let result = res['data']['data'].concat(res['data']['not_found'])
+            let cardNamesQuantityDic = this.getCardNamesQuantityDic(this.proxyes.current.value)
+            this.setState({
+                proxyDeckCardList: this.constructCardJSONQuantityObject(cardNamesQuantityDic, result)
             })
         })
     }
@@ -221,14 +273,14 @@ export class DeckEditor extends React.Component {
         let _carNameDic = {}
         let lines = textAreaRef.split(/\r?\n/g)
         lines.forEach(line => {
-            let matches = line.match(/([0-9]+)(\s+x\s+)?([a-zA-Z0-9\s.,'-]+)/)
+            let matches = line.match(/([0-9]+)(\s+x\s+)?([a-zA-Z0-9\s.,'-\/]+)/)
             if (matches == null) {
                 matches = line.match(/[a-zA-Z0-9\s.,'-]+/)
                 if (matches == null || line.match(/[0-9]+/)) {
                     return
                 }
                 quantity = "1"
-                cardName = matches[0]
+                cardName = matches[0].toLowerCase()
                 _carNameDic[cardName] = quantity
             } else {
                 quantity = matches[1]
@@ -238,6 +290,48 @@ export class DeckEditor extends React.Component {
         });
 
         return _carNameDic
+    }
+
+    checkProxysValidity() {
+        let mainDeck = this.getCardNamesQuantityDic(this.mainDeckInput.current.value)
+        let sideboard = this.getCardNamesQuantityDic(this.sideDeckInput.current.value)
+        let proxyCards = this.getCardNamesQuantityDic(this.proxyes.current.value)
+        let aux = {}
+
+        for (const cardItem in mainDeck) {
+            console.log(cardItem)
+            let i = sideboard[cardItem]
+            console.log(i)
+            if (i == undefined) {
+                aux[cardItem] = +mainDeck[cardItem]
+                continue
+            }
+            aux[cardItem] = +mainDeck[cardItem] + +i
+        }
+        for (const cardItem in sideboard) {
+            let i = mainDeck[cardItem]
+            if (i == undefined) {
+                aux[cardItem] = +sideboard[cardItem]
+                continue
+            }
+            aux[cardItem] = +sideboard[cardItem] + +i
+        }
+        console.log(aux)
+
+        for (const proxyCard in proxyCards) {
+            let cards = Object.keys(aux)
+            if (!cards.includes(proxyCard)) {
+                console.log(proxyCard + "in f1")
+                return false
+            }
+            if (aux[proxyCard] < proxyCards[proxyCard]) {
+                console.log(proxyCard + "in f2")
+                return false
+            }
+        }
+
+        return true
+
     }
 
     saveDeckData() {
@@ -254,12 +348,15 @@ export class DeckEditor extends React.Component {
         }
 
         let postBody = {
-            'deckName': deckName,
-            'playerName': selectedPlayer,
+            'playername': selectedPlayer,
+            'deckname': deckName,
             'elo': 1200,
             'maindeck': { 'data': this.state.mainDeckCardList },
-            'sideboard': { 'data': this.state.sideDeckCardList }
+            'sideboard': { 'data': this.state.sideDeckCardList },
+            'proxyes': { 'data': this.state.proxyDeckCardList },
         }
+
+        console.log(postBody)
 
         this.setState({
             showAlert: false
