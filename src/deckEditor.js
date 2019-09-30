@@ -20,7 +20,11 @@ export class DeckEditor extends React.Component {
             showAlert: false,
             collapse: false,
             showProxyErrorAlert: false,
-            validate: {}
+            validate: {
+                mainDeckField: true,
+                deckNameField: true,
+                playerNameField: true
+            }
         }
 
         this.mainDeckInput = React.createRef()
@@ -40,6 +44,55 @@ export class DeckEditor extends React.Component {
         }
     }
 
+    validatePlayerInput() {
+        let isPlayerNameFieldValid = true
+        if (
+            this.selectedPlayer.current == null ||
+            this.selectedPlayer.current.value == ''
+        ) {
+            isPlayerNameFieldValid = false
+        }
+
+        this.setState(prevState => {
+            let validate = Object.assign({}, prevState.validate);
+            validate.playerNameField = isPlayerNameFieldValid;
+            return { validate };
+        })
+    }
+
+    validateDeckNameInput() {
+        let isDeckNameFieldValid = true
+        if (
+            this.deckName.current == null ||
+            this.deckName.current.value == ''
+        ) {
+            isDeckNameFieldValid = false
+        }
+
+        this.setState(prevState => {
+            let validate = Object.assign({}, prevState.validate);
+            validate.deckNameField = isDeckNameFieldValid;
+            return { validate };
+        })
+    }
+
+
+    validateMainDeckInput() {
+        let isMainDeckFieldValid = true
+        if (
+            this.mainDeckInput.current == null ||
+            this.mainDeckInput.current.value == ''
+        ) {
+            isMainDeckFieldValid = false
+        }
+
+        this.setState(prevState => {
+            let validate = Object.assign({}, prevState.validate);
+            validate.mainDeckField = isMainDeckFieldValid;
+            return { validate };
+        })
+    }
+
     validate() {
         let isMainDeckFieldValid = true
         let isDeckNameFieldValid = true
@@ -47,21 +100,21 @@ export class DeckEditor extends React.Component {
 
         if (
             this.mainDeckInput.current == null ||
-            /^\s+$/.test(this.mainDeckInput.current.value)
+            this.mainDeckInput.current.value == ''
         ) {
             isMainDeckFieldValid = false
         }
 
         if (
             this.deckName.current == null ||
-            /^\s+$/.test(this.deckName.current.value)
+            this.deckName.current.value == ''
         ) {
             isDeckNameFieldValid = false
         }
 
         if (
             this.selectedPlayer.current == null ||
-            /^\s+$/.test(this.selectedPlayer.current.value)
+            this.selectedPlayer.current.value == ''
         ) {
             isPlayerNameFieldValid = false
         }
@@ -75,10 +128,10 @@ export class DeckEditor extends React.Component {
         })
 
         return ![
-                isDeckNameFieldValid, 
-                isMainDeckFieldValid, 
-                isPlayerNameFieldValid
-            ].includes(false)
+            isDeckNameFieldValid,
+            isMainDeckFieldValid,
+            isPlayerNameFieldValid
+        ].includes(false)
     }
 
     toggleProxyes() {
@@ -86,10 +139,7 @@ export class DeckEditor extends React.Component {
     }
 
     handleUpdateTextArea(event) {
-        if(!this.validate()) {
-            this.forceUpdate()
-            return
-        }
+        this.validate()
         event.preventDefault()
         this.fetchDeckData()
         this.setState({
@@ -109,7 +159,8 @@ export class DeckEditor extends React.Component {
                             type="textarea"
                             rows="1"
                             innerRef={this.deckName}
-                            invalid={this.state.validate.deckNameField}
+                            invalid={!this.state.validate.deckNameField}
+                            onChange={this.validateDeckNameInput.bind(this)}
                         />
                         <FormFeedback invalid>
                             Required field
@@ -117,11 +168,12 @@ export class DeckEditor extends React.Component {
                     </Col>
                     <Col>
                         <Label>Player*</Label>
-                        <Input 
-                            type="textarea" 
-                            rows="1" 
+                        <Input
+                            type="textarea"
+                            rows="1"
                             innerRef={this.selectedPlayer}
-                            invalid={this.state.validate.playerNameField} />
+                            invalid={!this.state.validate.playerNameField}
+                            onChange={this.validatePlayerInput.bind(this)} />
                         <FormFeedback invalid>
                             Required field
                         </FormFeedback>
@@ -166,7 +218,8 @@ export class DeckEditor extends React.Component {
                             cols='10'
                             noresize='true'
                             placeholder={'4 shock\n3 x Dovin\'s Veto'}
-                            invalid={this.state.validate.mainDeckField}
+                            invalid={!this.state.validate.mainDeckField}
+                            onChange={this.validateMainDeckInput.bind(this)}
                         />
                         <FormFeedback invalid>
                             Required field
