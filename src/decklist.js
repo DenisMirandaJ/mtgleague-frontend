@@ -1,6 +1,6 @@
 import React from 'react';
 import { getCardNameFromJSON, getCardTypeFromJSON, getCardPriceFromJSON } from './base/utils'
-import { Table, Container, Row, Col } from 'reactstrap'
+import { Table, Container, Row, Col, Alert } from 'reactstrap'
 import { CardInfo } from './CardInfo'
 import './mtg.css';
 
@@ -83,7 +83,7 @@ export class DeckList extends React.Component {
                 </Row>
                 <Row>
                     <Col>
-                        <Table>
+                        <Table size="sm">
                             <tbody>
                                 {cards}
                                 <tr>

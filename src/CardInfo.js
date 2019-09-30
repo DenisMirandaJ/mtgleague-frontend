@@ -19,7 +19,12 @@ export class CardInfo extends React.Component {
         let cardImagesURL = null
         let cardSymbols = null
         let cardLink = null
-        if (this.props.cardInfo['card_faces'] != null) {
+        if (
+            this.props.cardInfo['card_faces'] != null && 
+            this.props.cardInfo['card_faces'][0]['image_uris'] != undefined
+            ) 
+        {
+            console.log(this.props.cardInfo)
             cardImagesURL = <div>
                 <img width="100%" alt="Not Found" src={this.props.cardInfo['card_faces'][0]['image_uris']["normal"]} />
                 <img width="100%" alt="Not Found" src={this.props.cardInfo['card_faces'][1]['image_uris']["normal"]} />
@@ -34,7 +39,7 @@ export class CardInfo extends React.Component {
             cardLink = <Button color='link' onClick={this.toggle}>{cardName}</Button>
         } else {
             cardName = this.props.cardInfo["name"]
-            cardImagesURL = <img width="100%" alt="Not Found" src='' />
+            cardImagesURL = <img width="100%" alt="Not Found" src='https://gamepedia.cursecdn.com/mtgsalvation_gamepedia/f/f8/Magic_card_back.jpg' />
             cardLink = cardName
             cardNotFound = true
         }

@@ -13,6 +13,7 @@ export class DeckViewer extends React.Component {
             currentMainDeck: null,
             currentSideDeck: null,
             currentProxyDeck: null,
+            currentDeckName: '',
             showModal: false
         }
 
@@ -45,6 +46,7 @@ export class DeckViewer extends React.Component {
             currentMainDeck: currentEntry['maindeck']['data'],
             currentSideDeck: currentEntry['sideboard']['data'],
             currentProxyDeck: currentEntry['proxyes']['data'],
+            currentDeckName: currentEntry['deckname'],
             showModal: !this.state.showModal
         })
     }
@@ -53,20 +55,18 @@ export class DeckViewer extends React.Component {
         let list = this.state.data.map((item) => {
             return (
                 <tr onClick={() => { this.toggleDeckView(item['id']) }}>
-                    <th>{item['id']}</th>
                     <th>{item['playername']}</th>
                     <th>{item['deckname']}</th>
                 </tr>
             )
         }, this)
-        
+
         console.log(this.state)
         return (
             <div>
-                <Table hover>
+                <Table hover striped>
                     <thead>
                         <tr>
-                            <th>Id</th>
                             <th>Player Name</th>
                             <th>Deck Name</th>
                         </tr>
@@ -76,18 +76,33 @@ export class DeckViewer extends React.Component {
                     </tbody>
                 </Table>
                 <Modal isOpen={this.state.showModal} toggle={this.showDeckData.bind(this)} className={this.props.className}>
-                    <ModalHeader toggle={this.showDeckData.bind(this)}>Deck Viewer</ModalHeader>
+                    <ModalHeader toggle={this.showDeckData.bind(this)}>
+                        <h2>{this.state.currentDeckName}</h2>
+                    </ModalHeader>
                     <ModalBody>
                         <DeckList
                             style={{ paddingTop: "2%" }}
                             mainDeck={this.state.currentMainDeck}
                             sideDeck={this.state.currentSideDeck}
                         />
-                        <Button color="link" onClick={this.toggleProxyes.bind(this)} style={{ marginBottom: '1rem' }}>Show Proxy Cards</Button>
+                        <Button
+                            color="link"
+                            onClick={this.toggleProxyes.bind(this)}
+                            style={{ marginBottom: '1rem' }}
+                        >
+                            Show Proxy Cards
+                        </Button>
                         <Collapse isOpen={this.state.collapse}>
                             <label>Proxyes</label>
                             <DeckList style={{ paddingTop: "2%" }} mainDeck={this.state.currentProxyDeck} sideDeck={[]} />
                         </Collapse>
+                        <Button
+                            color="secondary"
+                            onClick={this.showDeckData.bind(this)}
+                            block
+                        >
+                            Close
+                        </Button>
                     </ModalBody>
                 </Modal>
             </div>
@@ -96,7 +111,7 @@ export class DeckViewer extends React.Component {
 
     getDataListsFromServer() {
         axios.get(
-            'http://190.44.74.23:3001/players'
+            'http://190.44.74.23:8001/players'
         ).then((res) => {
             this.setState({
                 data: res['data']

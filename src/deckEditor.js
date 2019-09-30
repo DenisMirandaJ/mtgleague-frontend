@@ -1,8 +1,8 @@
 import React from 'react';
-import { Button, Collapse, Alert, Nav, NavItem, NavLink, TabContent, TabPane, Container, Row, Col, Label, Input } from 'reactstrap';
+import { Button, Collapse, Alert, Nav, NavItem, NavLink, TabContent, TabPane, FormFeedback, Row, Col, Label, Input } from 'reactstrap';
 import { DeckList } from './decklist'
 import { getCardNameFromJSON } from './base/utils'
-import {DeckViewer} from './deckVisualizator'
+import { DeckViewer } from './deckVisualizator'
 import classnames from 'classnames';
 import Fuse from 'fuse.js'
 import axios from 'axios'
@@ -19,7 +19,8 @@ export class DeckEditor extends React.Component {
             deckName: '',
             showAlert: false,
             collapse: false,
-            showProxyErrorAlert: false
+            showProxyErrorAlert: false,
+            validate: {}
         }
 
         this.mainDeckInput = React.createRef()
@@ -39,17 +40,56 @@ export class DeckEditor extends React.Component {
         }
     }
 
+    validate() {
+        let isMainDeckFieldValid = true
+        let isDeckNameFieldValid = true
+        let isPlayerNameFieldValid = true
+
+        if (
+            this.mainDeckInput.current == null ||
+            /^\s+$/.test(this.mainDeckInput.current.value)
+        ) {
+            isMainDeckFieldValid = false
+        }
+
+        if (
+            this.deckName.current == null ||
+            /^\s+$/.test(this.deckName.current.value)
+        ) {
+            isDeckNameFieldValid = false
+        }
+
+        if (
+            this.selectedPlayer.current == null ||
+            /^\s+$/.test(this.selectedPlayer.current.value)
+        ) {
+            isPlayerNameFieldValid = false
+        }
+
+        this.setState({
+            validate: {
+                mainDeckField: isMainDeckFieldValid,
+                deckNameField: isDeckNameFieldValid,
+                playerNameField: isPlayerNameFieldValid
+            }
+        })
+
+        return ![
+                isDeckNameFieldValid, 
+                isMainDeckFieldValid, 
+                isPlayerNameFieldValid
+            ].includes(false)
+    }
+
     toggleProxyes() {
         this.setState(state => ({ collapse: !state.collapse }));
     }
 
-    componentDidUpdate(prevProps) {
-        if (prevProps === this.props) {
+    handleUpdateTextArea(event) {
+        if(!this.validate()) {
+            this.forceUpdate()
             return
         }
-    }
-
-    handleUpdateTextArea(event) {
         event.preventDefault()
         this.fetchDeckData()
         this.setState({
@@ -69,11 +109,22 @@ export class DeckEditor extends React.Component {
                             type="textarea"
                             rows="1"
                             innerRef={this.deckName}
+                            invalid={this.state.validate.deckNameField}
                         />
+                        <FormFeedback invalid>
+                            Required field
+                        </FormFeedback>
                     </Col>
                     <Col>
                         <Label>Player*</Label>
-                        <Input type="textarea" rows="1" innerRef={this.selectedPlayer} />
+                        <Input 
+                            type="textarea" 
+                            rows="1" 
+                            innerRef={this.selectedPlayer}
+                            invalid={this.state.validate.playerNameField} />
+                        <FormFeedback invalid>
+                            Required field
+                        </FormFeedback>
                     </Col>
                 </Row>
                 <Nav tabs>
@@ -115,7 +166,11 @@ export class DeckEditor extends React.Component {
                             cols='10'
                             noresize='true'
                             placeholder={'4 shock\n3 x Dovin\'s Veto'}
+                            invalid={this.state.validate.mainDeckField}
                         />
+                        <FormFeedback invalid>
+                            Required field
+                        </FormFeedback>
                     </TabPane>
                     <TabPane tabId="sidedeck">
                         <Input
@@ -150,7 +205,7 @@ export class DeckEditor extends React.Component {
                     block
                 >
                     Preview
-                            </Button>
+                </Button>
                 <Button
                     type='submit'
                     color='primary'
@@ -274,7 +329,7 @@ export class DeckEditor extends React.Component {
         lines.forEach(line => {
             let matches = line.match(/([0-9]+)(\s+x\s+)?([a-zA-Z0-9\s.,'-\/]+)/)
             if (matches == null) {
-                matches = line.match(/[a-zA-Z0-9\s.,'-]+/)
+                matches = line.match(/[a-zA-Z0-9\s.,'\/-]+/)
                 if (matches == null || line.match(/[0-9]+/)) {
                     return
                 }
@@ -334,17 +389,14 @@ export class DeckEditor extends React.Component {
     }
 
     saveDeckData() {
-
+        let isFormValid = this.validate()
+        if (!isFormValid) {
+            return
+        }
         let mainDeck = this.mainDeckInput.current === null ? '' : this.mainDeckInput.current.value
         let sideDeck = this.sideDeckInput.current === null ? '' : this.sideDeckInput.current.value
         let deckName = this.deckName.current === null ? '' : this.deckName.current.value
         let selectedPlayer = this.selectedPlayer.current === null ? '' : this.selectedPlayer.current.value
-        if (this.state.mainDeckCardList.length == 0 ||
-            deckName == '' ||
-            selectedPlayer == '') {
-            alert("Please fill all required* fields")
-            return
-        }
 
         let postBody = {
             'playername': selectedPlayer,
@@ -361,7 +413,7 @@ export class DeckEditor extends React.Component {
             showAlert: false
         })
         axios.post(
-            'http://190.44.74.23:3001/players',
+            'http://190.44.74.23:8001/players',
             postBody
         ).then((res) => {
             console.log(res)

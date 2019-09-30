@@ -46,6 +46,7 @@ export class MainPage extends React.Component {
                 </Nav>
                 <TabContent activeTab={this.state.activeTab}>
                     <TabPane tabId="deckVisualizator">
+                        <br></br>
                         <DeckViewer style={{ paddingTop: "5%" }}/>
                     </TabPane>
                     <TabPane tabId="deckEditor">
