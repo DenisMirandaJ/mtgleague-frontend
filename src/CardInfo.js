@@ -55,6 +55,7 @@ export class CardInfo extends React.Component {
                         <ModalHeader toggle={this.toggle}></ModalHeader>
                         <ModalBody>
                             {cardImagesURL}
+                            <Button color="secondary" onClick={this.toggle}>Close</Button>
                         </ModalBody>
                     </Modal>
                 </tr>

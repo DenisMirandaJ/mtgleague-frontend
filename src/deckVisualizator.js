@@ -1,6 +1,7 @@
 import React from 'react';
 import { Table, Modal, ModalHeader, ModalBody, Button, Collapse } from 'reactstrap';
 import { DeckList } from './decklist'
+import {ip} from './base/requests'
 import axios from 'axios'
 import './mtg.css'
 
@@ -23,6 +24,12 @@ export class DeckViewer extends React.Component {
 
     componentDidMount() {
         this.getDataListsFromServer()
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        if(prevState != this.state) {
+            this.getDataListsFromServer()
+        }
     }
 
     toggleProxyes() {
@@ -111,7 +118,7 @@ export class DeckViewer extends React.Component {
 
     getDataListsFromServer() {
         axios.get(
-            'http://190.44.74.23:8001/players'
+            ip+'/players'
         ).then((res) => {
             this.setState({
                 data: res['data']

@@ -3,6 +3,7 @@ import { Button, Collapse, Alert, Nav, NavItem, NavLink, TabContent, TabPane, Fo
 import { DeckList } from './decklist'
 import { getCardNameFromJSON } from './base/utils'
 import { DeckViewer } from './deckVisualizator'
+import { ip } from './base/requests'
 import classnames from 'classnames';
 import Fuse from 'fuse.js'
 import axios from 'axios'
@@ -58,6 +59,8 @@ export class DeckEditor extends React.Component {
             validate.playerNameField = isPlayerNameFieldValid;
             return { validate };
         })
+
+        return isPlayerNameFieldValid
     }
 
     validateDeckNameInput() {
@@ -74,6 +77,8 @@ export class DeckEditor extends React.Component {
             validate.deckNameField = isDeckNameFieldValid;
             return { validate };
         })
+
+        return isDeckNameFieldValid
     }
 
 
@@ -91,48 +96,18 @@ export class DeckEditor extends React.Component {
             validate.mainDeckField = isMainDeckFieldValid;
             return { validate };
         })
+
+        return isMainDeckFieldValid
     }
 
     validate() {
-        let isMainDeckFieldValid = true
-        let isDeckNameFieldValid = true
-        let isPlayerNameFieldValid = true
-
-        if (
-            this.mainDeckInput.current == null ||
-            this.mainDeckInput.current.value == ''
-        ) {
-            isMainDeckFieldValid = false
-        }
-
-        if (
-            this.deckName.current == null ||
-            this.deckName.current.value == ''
-        ) {
-            isDeckNameFieldValid = false
-        }
-
-        if (
-            this.selectedPlayer.current == null ||
-            this.selectedPlayer.current.value == ''
-        ) {
-            isPlayerNameFieldValid = false
-        }
-
-        this.setState({
-            validate: {
-                mainDeckField: isMainDeckFieldValid,
-                deckNameField: isDeckNameFieldValid,
-                playerNameField: isPlayerNameFieldValid
-            }
-        })
-
-        return ![
-            isDeckNameFieldValid,
-            isMainDeckFieldValid,
-            isPlayerNameFieldValid
-        ].includes(false)
+        return (
+            this.validateDeckNameInput() &&
+            this.validatePlayerInput() &&
+            this.validateMainDeckInput()
+        )
     }
+
 
     toggleProxyes() {
         this.setState(state => ({ collapse: !state.collapse }));
@@ -446,8 +421,6 @@ export class DeckEditor extends React.Component {
         if (!isFormValid) {
             return
         }
-        let mainDeck = this.mainDeckInput.current === null ? '' : this.mainDeckInput.current.value
-        let sideDeck = this.sideDeckInput.current === null ? '' : this.sideDeckInput.current.value
         let deckName = this.deckName.current === null ? '' : this.deckName.current.value
         let selectedPlayer = this.selectedPlayer.current === null ? '' : this.selectedPlayer.current.value
 
@@ -466,7 +439,7 @@ export class DeckEditor extends React.Component {
             showAlert: false
         })
         axios.post(
-            'http://190.44.74.23:8001/players',
+            ip + '/players',
             postBody
         ).then((res) => {
             console.log(res)
