@@ -2,8 +2,7 @@ import React from 'react';
 import { Button, Collapse, Alert, Nav, NavItem, NavLink, TabContent, TabPane, FormFeedback, Row, Col, Label, Input } from 'reactstrap';
 import { DeckList } from './decklist'
 import { getCardNameFromJSON } from './base/utils'
-import { DeckViewer } from './deckVisualizator'
-import { ip } from './base/requests'
+import { API_URL } from './base/config'
 import classnames from 'classnames';
 import Fuse from 'fuse.js'
 import axios from 'axios'
@@ -81,7 +80,6 @@ export class DeckEditor extends React.Component {
         return isDeckNameFieldValid
     }
 
-
     validateMainDeckInput() {
         let isMainDeckFieldValid = true
         if (
@@ -113,7 +111,7 @@ export class DeckEditor extends React.Component {
         this.setState(state => ({ collapse: !state.collapse }));
     }
 
-    handleUpdateTextArea(event) {
+    handleSubmit(event) {
         this.validate()
         event.preventDefault()
         this.fetchDeckData()
@@ -121,146 +119,6 @@ export class DeckEditor extends React.Component {
             deckName: this.deckName.current.value,
             showAlert: false
         })
-    }
-
-    render() {
-        return (
-            <div>
-                <h1 style={{ paddingBottom: "10px", paddingTop: "2%" }}>Deck Editor</h1>
-                <Row style={{ paddingBottom: "2%" }}>
-                    <Col>
-                        <Label>Deck Name*</Label>
-                        <Input
-                            type="textarea"
-                            rows="1"
-                            innerRef={this.deckName}
-                            invalid={!this.state.validate.deckNameField}
-                            onChange={this.validateDeckNameInput.bind(this)}
-                        />
-                        <FormFeedback invalid>
-                            Required field
-                        </FormFeedback>
-                    </Col>
-                    <Col>
-                        <Label>Player*</Label>
-                        <Input
-                            type="textarea"
-                            rows="1"
-                            innerRef={this.selectedPlayer}
-                            invalid={!this.state.validate.playerNameField}
-                            onChange={this.validatePlayerInput.bind(this)} />
-                        <FormFeedback invalid>
-                            Required field
-                        </FormFeedback>
-                    </Col>
-                </Row>
-                <Nav tabs>
-                    <NavItem size="lg">
-                        <NavLink
-                            size="lg"
-                            className={classnames({ active: this.state.activeTab === 'maindeck' })}
-                            onClick={() => { this.toggleTab('maindeck'); }}
-                        >
-                            Main Deck*
-                        </NavLink>
-                    </NavItem>
-                    <NavItem>
-                        <NavLink
-                            size="lg"
-                            className={classnames({ active: this.state.activeTab === 'sidedeck' })}
-                            onClick={() => { this.toggleTab('sidedeck'); }}
-                        >
-                            Sideboard
-                        </NavLink>
-                    </NavItem>
-                    <NavItem size="lg">
-                        <NavLink
-                            size="lg"
-                            className={classnames({ active: this.state.activeTab === 'proxyes' })}
-                            onClick={() => { this.toggleTab('proxyes'); }}
-                        >
-                            Proxys
-                        </NavLink>
-
-                    </NavItem>
-                </Nav>
-                <TabContent activeTab={this.state.activeTab}>
-                    <TabPane tabId="maindeck">
-                        <Input
-                            type="textarea"
-                            innerRef={this.mainDeckInput}
-                            rows='17'
-                            cols='10'
-                            noresize='true'
-                            placeholder={'4 shock\n3 x Dovin\'s Veto'}
-                            invalid={!this.state.validate.mainDeckField}
-                            onChange={this.validateMainDeckInput.bind(this)}
-                        />
-                        <FormFeedback invalid>
-                            Required field
-                        </FormFeedback>
-                    </TabPane>
-                    <TabPane tabId="sidedeck">
-                        <Input
-                            type="textarea"
-                            innerRef={this.sideDeckInput}
-                            rows='17'
-                            cols='10'
-                            noresize='true'
-                            placeholder={'4 Lightning Bolt\n3 x Aether Vial'}
-                        />
-                    </TabPane>
-                    <TabPane tabId="proxyes">
-                        <Input
-                            type="textarea"
-                            innerRef={this.proxyes}
-                            rows='17'
-                            cols='10'
-                            noresize='true'
-                            placeholder={'Enter the proxy cards in your deck'}
-                        />
-                    </TabPane>
-                </TabContent>
-                {this.state.showAlert &&
-                    <Alert color="success">
-                        Deck was saved on the database
-                    </Alert>}
-                <Button
-                    type='submit'
-                    color='primary'
-                    size="lg"
-                    onClick={this.handleUpdateTextArea.bind(this)}
-                    block
-                >
-                    Preview
-                </Button>
-                <Button
-                    type='submit'
-                    color='primary'
-                    size="lg"
-                    onClick={this.saveDeckData.bind(this)}
-                    block
-                >
-                    Submit
-                </Button>
-                <DeckList style={{ paddingTop: "2%" }} mainDeck={this.state.mainDeckCardList} sideDeck={this.state.sideDeckCardList} />
-                {
-                    this.state.showProxyErrorAlert &&
-                    <Alert color="warning">
-                        Invalid proxy list
-                    </Alert>
-                }
-                {
-                    !this.state.showProxyErrorAlert &&
-                    <div>
-                        <Button color="link" onClick={this.toggleProxyes.bind(this)} style={{ marginBottom: '1rem' }}>Show Proxy Cards</Button>
-                        <Collapse isOpen={this.state.collapse}>
-                            <DeckList style={{ paddingTop: "2%" }} mainDeck={this.state.proxyDeckCardList} sideDeck={[]} />
-                        </Collapse>
-                    </div>
-                }
-            </div>
-        );
     }
 
     fetchDeckData() {
@@ -381,9 +239,7 @@ export class DeckEditor extends React.Component {
         let aux = {}
 
         for (const cardItem in mainDeck) {
-            console.log(cardItem)
             let i = sideboard[cardItem]
-            console.log(i)
             if (i == undefined) {
                 aux[cardItem] = +mainDeck[cardItem]
                 continue
@@ -398,16 +254,13 @@ export class DeckEditor extends React.Component {
             }
             aux[cardItem] = +sideboard[cardItem] + +i
         }
-        console.log(aux)
 
         for (const proxyCard in proxyCards) {
             let cards = Object.keys(aux)
             if (!cards.includes(proxyCard)) {
-                console.log(proxyCard + "in f1")
                 return false
             }
             if (aux[proxyCard] < proxyCards[proxyCard]) {
-                console.log(proxyCard + "in f2")
                 return false
             }
         }
@@ -427,26 +280,165 @@ export class DeckEditor extends React.Component {
         let postBody = {
             'playername': selectedPlayer,
             'deckname': deckName,
-            'elo': 1200,
+            'password': "pass",
             'maindeck': { 'data': this.state.mainDeckCardList },
             'sideboard': { 'data': this.state.sideDeckCardList },
             'proxyes': { 'data': this.state.proxyDeckCardList },
         }
 
-        console.log(postBody)
 
         this.setState({
             showAlert: false
         })
         axios.post(
-            ip + '/players',
+            process.env.REACT_APP_API_URL+'/players',
             postBody
         ).then((res) => {
-            console.log(res)
             this.setState({
                 showAlert: true
             })
             setTimeout(() => { this.setState({ showAlert: false }) }, 10000)
         })
     }
+
+    render() {
+        return (
+            <div>
+                <h1 style={{ paddingBottom: "10px", paddingTop: "2%" }}>Deck Editor</h1>
+                <Row style={{ paddingBottom: "2%" }}>
+                    <Col>
+                        <Label>Deck Name*</Label>
+                        <Input
+                            type="textarea"
+                            rows="1"
+                            innerRef={this.deckName}
+                            invalid={!this.state.validate.deckNameField}
+                            onChange={this.validateDeckNameInput.bind(this)}
+                        />
+                        <FormFeedback invalid>
+                            Required field
+                        </FormFeedback>
+                    </Col>
+                    <Col>
+                        <Label>Player*</Label>
+                        <Input
+                            type="textarea"
+                            rows="1"
+                            innerRef={this.selectedPlayer}
+                            invalid={!this.state.validate.playerNameField}
+                            onChange={this.validatePlayerInput.bind(this)} />
+                        <FormFeedback invalid>
+                            Required field
+                        </FormFeedback>
+                    </Col>
+                </Row>
+                <Nav tabs>
+                    <NavItem size="lg">
+                        <NavLink
+                            size="lg"
+                            className={classnames({ active: this.state.activeTab === 'maindeck' })}
+                            onClick={() => { this.toggleTab('maindeck'); }}
+                        >
+                            Main Deck*
+                        </NavLink>
+                    </NavItem>
+                    <NavItem>
+                        <NavLink
+                            size="lg"
+                            className={classnames({ active: this.state.activeTab === 'sidedeck' })}
+                            onClick={() => { this.toggleTab('sidedeck'); }}
+                        >
+                            Sideboard
+                        </NavLink>
+                    </NavItem>
+                    <NavItem size="lg">
+                        <NavLink
+                            size="lg"
+                            className={classnames({ active: this.state.activeTab === 'proxyes' })}
+                            onClick={() => { this.toggleTab('proxyes'); }}
+                        >
+                            Proxys
+                        </NavLink>
+
+                    </NavItem>
+                </Nav>
+                <TabContent activeTab={this.state.activeTab}>
+                    <TabPane tabId="maindeck">
+                        <Input
+                            type="textarea"
+                            innerRef={this.mainDeckInput}
+                            rows='17'
+                            cols='10'
+                            noresize='true'
+                            placeholder={'4 shock\n3 x Dovin\'s Veto'}
+                            invalid={!this.state.validate.mainDeckField}
+                            onChange={this.validateMainDeckInput.bind(this)}
+                        />
+                        <FormFeedback invalid>
+                            Required field
+                        </FormFeedback>
+                    </TabPane>
+                    <TabPane tabId="sidedeck">
+                        <Input
+                            type="textarea"
+                            innerRef={this.sideDeckInput}
+                            rows='17'
+                            cols='10'
+                            noresize='true'
+                            placeholder={'4 Lightning Bolt\n3 x Aether Vial'}
+                        />
+                    </TabPane>
+                    <TabPane tabId="proxyes">
+                        <Input
+                            type="textarea"
+                            innerRef={this.proxyes}
+                            rows='17'
+                            cols='10'
+                            noresize='true'
+                            placeholder={'Enter the proxy cards in your deck'}
+                        />
+                    </TabPane>
+                </TabContent>
+                {this.state.showAlert &&
+                    <Alert color="success">
+                        Deck was saved on the database
+                    </Alert>}
+                <Button
+                    type='submit'
+                    color='primary'
+                    size="lg"
+                    onClick={this.handleSubmit.bind(this)}
+                    block
+                >
+                    Preview
+                </Button>
+                <Button
+                    type='submit'
+                    color='primary'
+                    size="lg"
+                    onClick={this.saveDeckData.bind(this)}
+                    block
+                >
+                    Submit
+                </Button>
+                <DeckList style={{ paddingTop: "2%" }} mainDeck={this.state.mainDeckCardList} sideDeck={this.state.sideDeckCardList} />
+                {
+                    this.state.showProxyErrorAlert &&
+                    <Alert color="warning">
+                        Invalid proxy list
+                    </Alert>
+                }
+                {
+                    !this.state.showProxyErrorAlert &&
+                    <div>
+                        <Button color="link" onClick={this.toggleProxyes.bind(this)} style={{ marginBottom: '1rem' }}>Show Proxy Cards</Button>
+                        <Collapse isOpen={this.state.collapse}>
+                            <DeckList style={{ paddingTop: "2%" }} mainDeck={this.state.proxyDeckCardList} sideDeck={[]} />
+                        </Collapse>
+                    </div>
+                }
+            </div>
+        );
+    }
+
 } 

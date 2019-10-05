@@ -1,7 +1,7 @@
 import React from 'react';
 import { Table, Modal, ModalHeader, ModalBody, Button, Collapse } from 'reactstrap';
 import { DeckList } from './decklist'
-import {ip} from './base/requests'
+import {API_URL} from './base/config'
 import axios from 'axios'
 import './mtg.css'
 
@@ -19,15 +19,15 @@ export class DeckViewer extends React.Component {
         }
 
         this.toggleDeckView = this.showDeckData
-        this.tets = "hola"
     }
 
-    componentDidMount() {
+    componentDidMount(prevProps, prevState, snapshot) {
         this.getDataListsFromServer()
     }
 
+
     componentDidUpdate(prevProps, prevState) {
-        if(prevState != this.state) {
+        if (this.state.data === prevState.data) {
             this.getDataListsFromServer()
         }
     }
@@ -37,7 +37,6 @@ export class DeckViewer extends React.Component {
     }
 
     showDeckData(id) {
-        console.log(id)
         let currentEntry = this.state.data.find((element) => {
             return element.id == id
         })
@@ -58,6 +57,16 @@ export class DeckViewer extends React.Component {
         })
     }
 
+    getDataListsFromServer() {
+        axios.get(
+            process.env.REACT_APP_API_URL+'/players'
+        ).then((res) => {
+            this.setState({
+                data: res['data']
+            })
+        })
+    }
+    
     render() {
         let list = this.state.data.map((item) => {
             return (
@@ -68,7 +77,6 @@ export class DeckViewer extends React.Component {
             )
         }, this)
 
-        console.log(this.state)
         return (
             <div>
                 <Table hover striped>
@@ -116,13 +124,4 @@ export class DeckViewer extends React.Component {
         )
     }
 
-    getDataListsFromServer() {
-        axios.get(
-            ip+'/players'
-        ).then((res) => {
-            this.setState({
-                data: res['data']
-            })
-        })
-    }
 }

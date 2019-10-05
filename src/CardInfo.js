@@ -24,7 +24,6 @@ export class CardInfo extends React.Component {
             this.props.cardInfo['card_faces'][0]['image_uris'] != undefined
             ) 
         {
-            console.log(this.props.cardInfo)
             cardImagesURL = <div>
                 <img width="100%" alt="Not Found" src={this.props.cardInfo['card_faces'][0]['image_uris']["normal"]} />
                 <img width="100%" alt="Not Found" src={this.props.cardInfo['card_faces'][1]['image_uris']["normal"]} />
