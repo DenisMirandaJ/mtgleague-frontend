@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Modal, ModalBody, ModalHeader } from 'reactstrap'
-import {getCardPriceFromJSON} from './base/utils'
+import {getCardPriceFromJSON, getCardManaCostSymbols} from './base/utils'
 import './mtg.css';
 
 export class CardInfo extends React.Component {
@@ -9,7 +9,6 @@ export class CardInfo extends React.Component {
         this.state = {
             modal: false
         };
-
         this.toggle = this.toggleCardView.bind(this);
     }
 
@@ -28,12 +27,12 @@ export class CardInfo extends React.Component {
                 <img width="100%" alt="Not Found" src={this.props.cardInfo['card_faces'][0]['image_uris']["normal"]} />
                 <img width="100%" alt="Not Found" src={this.props.cardInfo['card_faces'][1]['image_uris']["normal"]} />
             </div>
-            cardSymbols = this.getCardManaCost(this.props.cardInfo['card_faces'][0]['mana_cost'])
+            cardSymbols = getCardManaCostSymbols(this.props.cardInfo['card_faces'][0]['mana_cost'])
             cardName = this.props.cardInfo['card_faces'][0]['name']
             cardLink = <Button color='link' onClick={this.toggle}>{cardName}</Button>
         } else if (this.props.cardInfo['image_uris'] != null) {
             cardImagesURL = <img width="100%" alt="Not Found" src={this.props.cardInfo['image_uris']["normal"]} />
-            cardSymbols = this.getCardManaCost(this.props.cardInfo['mana_cost'])
+            cardSymbols = getCardManaCostSymbols(this.props.cardInfo['mana_cost'])
             cardName = this.props.cardInfo["name"]
             cardLink = <Button color='link' onClick={this.toggle}>{cardName}</Button>
         } else {
@@ -82,27 +81,6 @@ export class CardInfo extends React.Component {
         this.setState(prevState => ({
             modal: !prevState.modal
         }));
-    }
-
-    getCardManaCost(manaCost) {
-        if (manaCost == null) {
-            return ''
-        }
-        let manaSymbolsText = manaCost.match(/\{([^}]+)\}/g)
-        if (manaSymbolsText == null) {
-            return ""
-        }
-        manaSymbolsText = manaSymbolsText.map((text) => {
-            return text.replace('{', '').replace('}', '').replace('/', '')
-        })
-
-        let manaSymbols = manaSymbolsText.map((symbol, index) => {
-            return (
-                <abbr key={index} className={"card-symbol card-symbol-" + symbol}></abbr>
-            )
-        })
-
-        return manaSymbols;
     }
 }
 

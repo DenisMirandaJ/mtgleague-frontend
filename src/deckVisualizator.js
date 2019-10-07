@@ -1,7 +1,7 @@
 import React from 'react';
 import { Table, Modal, ModalHeader, ModalBody, Button, Collapse } from 'reactstrap';
 import { DeckList } from './decklist'
-import {API_URL} from './base/config'
+import { getColorsFromJSON, getCardManaCostSymbols} from './base/utils'
 import axios from 'axios'
 import './mtg.css'
 
@@ -36,6 +36,19 @@ export class DeckViewer extends React.Component {
         this.setState(state => ({ collapse: !state.collapse }));
     }
 
+    getColorIdentity(mainDeck) {
+        let colorIdentity = []
+        mainDeck.forEach(cardJSON => {
+            colorIdentity = colorIdentity.concat(getColorsFromJSON(cardJSON['cardJSON']))
+        });
+
+        function onlyUnique(value, index, self) {
+            return self.indexOf(value) === index;
+        }
+        let colors = colorIdentity.filter(onlyUnique)
+        return colors.join('')
+    }
+
     showDeckData(id) {
         let currentEntry = this.state.data.find((element) => {
             return element.id == id
@@ -59,20 +72,24 @@ export class DeckViewer extends React.Component {
 
     getDataListsFromServer() {
         axios.get(
-            process.env.REACT_APP_API_URL+'/players'
+            process.env.REACT_APP_API_URL + '/players'
         ).then((res) => {
             this.setState({
                 data: res['data']
             })
         })
     }
-    
+
     render() {
         let list = this.state.data.map((item) => {
             return (
                 <tr onClick={() => { this.toggleDeckView(item['id']) }}>
                     <th>{item['playername']}</th>
                     <th>{item['deckname']}</th>
+                    <th>{
+                        getCardManaCostSymbols(this.getColorIdentity(item['maindeck']['data']))
+                        }
+                    </th>
                 </tr>
             )
         }, this)
@@ -84,6 +101,7 @@ export class DeckViewer extends React.Component {
                         <tr>
                             <th>Player Name</th>
                             <th>Deck Name</th>
+                            <th>Color Identity</th>
                         </tr>
                     </thead>
                     <tbody>

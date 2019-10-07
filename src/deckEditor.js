@@ -1,8 +1,7 @@
 import React from 'react';
-import { Button, Collapse, Alert, Nav, NavItem, NavLink, TabContent, TabPane, FormFeedback, Row, Col, Label, Input } from 'reactstrap';
+import { Button, FormText, Collapse, Alert, Nav, NavItem, NavLink, TabContent, TabPane, FormFeedback, Row, Col, Label, Input } from 'reactstrap';
 import { DeckList } from './decklist'
 import { getCardNameFromJSON } from './base/utils'
-import { API_URL } from './base/config'
 import classnames from 'classnames';
 import Fuse from 'fuse.js'
 import axios from 'axios'
@@ -18,8 +17,14 @@ export class DeckEditor extends React.Component {
             activeTab: 'maindeck',
             deckName: '',
             showAlert: false,
+            showEditErrorAlert: false,
+            errorMsg: '',
+            showGenericErrorAlert: false,
             collapse: false,
             showProxyErrorAlert: false,
+            playernames: [],
+            playername: '',
+            showSpinner: false,
             validate: {
                 mainDeckField: true,
                 deckNameField: true,
@@ -29,11 +34,57 @@ export class DeckEditor extends React.Component {
 
         this.mainDeckInput = React.createRef()
         this.sideDeckInput = React.createRef()
+        this.passwordInput = React.createRef()
         this.deckName = React.createRef()
         this.selectedPlayer = React.createRef()
         this.proxyes = React.createRef()
 
         this.showLoadingSpinner = false
+    }
+
+    componentDidMount() {
+        axios.get(
+            process.env.REACT_APP_API_URL + '/players/names'
+        ).then((res) => {
+            this.setState({
+                playernames: res['data']
+            })
+        })
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        if (prevState.playernames === this.state.playernames) {
+            if (prevState.playername !== this.state.playername) {
+                return
+            }
+            axios.get(
+                process.env.REACT_APP_API_URL + '/players/names'
+            ).then((res) => {
+                this.setState({
+                    playernames: res['data']
+                })
+            })
+        }
+    }
+
+    handlePlayerNameField(event) {
+        event.preventDefault()
+        this.setState({
+            playername: event.target.value
+        })
+        if (event.target.value === '' || event.target.value === null) {
+            this.setState(prevState => {
+                let validate = Object.assign({}, prevState.validate);
+                validate.playerNameField = false;
+                return { validate };
+            })
+            return
+        }
+        this.setState(prevState => {
+            let validate = Object.assign({}, prevState.validate);
+            validate.playerNameField = true;
+            return { validate };
+        })
     }
 
     toggleTab(tab) {
@@ -47,8 +98,8 @@ export class DeckEditor extends React.Component {
     validatePlayerInput() {
         let isPlayerNameFieldValid = true
         if (
-            this.selectedPlayer.current == null ||
-            this.selectedPlayer.current.value == ''
+            this.state.playername === null ||
+            this.state.playername === ''
         ) {
             isPlayerNameFieldValid = false
         }
@@ -65,8 +116,8 @@ export class DeckEditor extends React.Component {
     validateDeckNameInput() {
         let isDeckNameFieldValid = true
         if (
-            this.deckName.current == null ||
-            this.deckName.current.value == ''
+            this.deckName.current === null ||
+            this.deckName.current.value === ''
         ) {
             isDeckNameFieldValid = false
         }
@@ -83,8 +134,8 @@ export class DeckEditor extends React.Component {
     validateMainDeckInput() {
         let isMainDeckFieldValid = true
         if (
-            this.mainDeckInput.current == null ||
-            this.mainDeckInput.current.value == ''
+            this.mainDeckInput.current === null ||
+            this.mainDeckInput.current.value === ''
         ) {
             isMainDeckFieldValid = false
         }
@@ -99,26 +150,34 @@ export class DeckEditor extends React.Component {
     }
 
     validate() {
-        return (
-            this.validateDeckNameInput() &&
-            this.validatePlayerInput() &&
-            this.validateMainDeckInput()
-        )
+        let v1 = this.validateDeckNameInput()
+        let v2 = this.validateMainDeckInput()
+        let v3 = this.validatePlayerInput()
+        return v1 && v2 && v3
     }
-
 
     toggleProxyes() {
         this.setState(state => ({ collapse: !state.collapse }));
     }
 
-    handleSubmit(event) {
+    handlePreview(event) {
+        this.setState({
+            showSpinner: true
+        })
         this.validate()
         event.preventDefault()
         this.fetchDeckData()
         this.setState({
             deckName: this.deckName.current.value,
-            showAlert: false
+            showAlert: false,
+            showEditErrorAlert: false
         })
+    }
+
+    handleSubmit(event) {
+        event.preventDefault()
+        this.handlePreview(event)
+
     }
 
     fetchDeckData() {
@@ -127,16 +186,16 @@ export class DeckEditor extends React.Component {
         let proxyDeckScryfallPostParameters = this.getScryfallPostParameters(this.proxyes.current.value)
 
         if (mainDeckScryfallPostParameters === null ||
-            mainDeckScryfallPostParameters == [] ||
-            mainDeckScryfallPostParameters.identifier == []) {
+            mainDeckScryfallPostParameters === [] ||
+            mainDeckScryfallPostParameters.identifier === []) {
             return
         }
         if (sideDeckScryfallPostParameters === null ||
-            sideDeckScryfallPostParameters == [] ||
-            sideDeckScryfallPostParameters.identifier == []) {
+            sideDeckScryfallPostParameters === [] ||
+            sideDeckScryfallPostParameters.identifier === []) {
             return
         }
-
+        3
         axios.post(
             'https://api.scryfall.com/cards/collection',
             mainDeckScryfallPostParameters
@@ -144,7 +203,8 @@ export class DeckEditor extends React.Component {
             let result = res['data']['data'].concat(res['data']['not_found'])
             let cardNamesQuantityDic = this.getCardNamesQuantityDic(this.mainDeckInput.current.value)
             this.setState({
-                mainDeckCardList: this.constructCardJSONQuantityObject(cardNamesQuantityDic, result)
+                mainDeckCardList: this.constructCardJSONQuantityObject(cardNamesQuantityDic, result),
+                showSpinner: false
             })
         })
 
@@ -240,7 +300,7 @@ export class DeckEditor extends React.Component {
 
         for (const cardItem in mainDeck) {
             let i = sideboard[cardItem]
-            if (i == undefined) {
+            if (i === undefined) {
                 aux[cardItem] = +mainDeck[cardItem]
                 continue
             }
@@ -248,7 +308,7 @@ export class DeckEditor extends React.Component {
         }
         for (const cardItem in sideboard) {
             let i = mainDeck[cardItem]
-            if (i == undefined) {
+            if (i === undefined) {
                 aux[cardItem] = +sideboard[cardItem]
                 continue
             }
@@ -270,46 +330,85 @@ export class DeckEditor extends React.Component {
     }
 
     saveDeckData() {
+        console.log(this.state)
         let isFormValid = this.validate()
         if (!isFormValid) {
             return
         }
         let deckName = this.deckName.current === null ? '' : this.deckName.current.value
-        let selectedPlayer = this.selectedPlayer.current === null ? '' : this.selectedPlayer.current.value
 
         let postBody = {
-            'playername': selectedPlayer,
+            'playername': this.state.playername,
             'deckname': deckName,
-            'password': "pass",
+            'password': this.passwordInput.current === null ? '' : this.passwordInput.current.value,
             'maindeck': { 'data': this.state.mainDeckCardList },
             'sideboard': { 'data': this.state.sideDeckCardList },
             'proxyes': { 'data': this.state.proxyDeckCardList },
         }
 
-
+        console.log(postBody)
         this.setState({
-            showAlert: false
+            showAlert: false,
+            showEditErrorAlert: false
         })
         axios.post(
-            process.env.REACT_APP_API_URL+'/players',
+            process.env.REACT_APP_API_URL + '/players',
             postBody
         ).then((res) => {
             this.setState({
                 showAlert: true
             })
-            setTimeout(() => { this.setState({ showAlert: false }) }, 10000)
+        }).catch((err) => {
+            if (err.response.data.error.name == 'UserAlreadyExistError') {
+                this.setState({
+                    showEditErrorAlert: true,
+                    errorMsg: 'Invalid password, if you\'ve forgotten your password contact the admins at elomtg@protonmail.com'
+                })
+            }
         })
     }
 
     render() {
+        let options = this.state.playernames.map(item => {
+            return <option key={item.name} value={item.name} />
+        })
         return (
             <div>
                 <h1 style={{ paddingBottom: "10px", paddingTop: "2%" }}>Deck Editor</h1>
-                <Row style={{ paddingBottom: "2%" }}>
+                <Row style={{ paddingBottom: "2%", paddingLeft: "2%" }}>
+                    <Col>
+                        <Row>
+                            <Label>Player*</Label>
+                        </Row>
+                        <Row>
+                            <input
+                                id="playernameTextBox"
+                                list="encodings"
+                                value={this.state.playername}
+                                onChange={this.handlePlayerNameField.bind(this)}
+                                className="custom-select"
+                                style={
+                                    !this.state.validate.playerNameField ?
+                                        {
+                                            "border-color": "rgb(210, 0, 0)",
+                                            "box-shadow": "inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 3px rgba(255, 0, 0, 0.6)"
+                                        } :
+                                        {}
+                                }
+                                required
+                            />
+                            <datalist id="encodings">
+                                {options}
+                            </datalist>
+                            <FormFeedback invalid>
+                                Required field
+                            </FormFeedback>
+                        </Row>
+                    </Col>
                     <Col>
                         <Label>Deck Name*</Label>
                         <Input
-                            type="textarea"
+                            type="input"
                             rows="1"
                             innerRef={this.deckName}
                             invalid={!this.state.validate.deckNameField}
@@ -320,16 +419,13 @@ export class DeckEditor extends React.Component {
                         </FormFeedback>
                     </Col>
                     <Col>
-                        <Label>Player*</Label>
+                        <Label>Password</Label>
                         <Input
-                            type="textarea"
-                            rows="1"
-                            innerRef={this.selectedPlayer}
-                            invalid={!this.state.validate.playerNameField}
-                            onChange={this.validatePlayerInput.bind(this)} />
-                        <FormFeedback invalid>
-                            Required field
-                        </FormFeedback>
+                            type="password"
+                            name="password"
+                            innerRef={this.passwordInput}
+                        />
+                        <FormText>Password is necessary for later edition.</FormText>
                     </Col>
                 </Row>
                 <Nav tabs>
@@ -399,15 +495,23 @@ export class DeckEditor extends React.Component {
                         />
                     </TabPane>
                 </TabContent>
-                {this.state.showAlert &&
+                {
+                    this.state.showAlert &&
                     <Alert color="success">
                         Deck was saved on the database
-                    </Alert>}
+                    </Alert>
+                }
+                {
+                    this.state.showEditErrorAlert &&
+                    <Alert color="danger">
+                        {this.state.errorMsg}
+                    </Alert>
+                }
                 <Button
                     type='submit'
                     color='primary'
                     size="lg"
-                    onClick={this.handleSubmit.bind(this)}
+                    onClick={this.handlePreview.bind(this)}
                     block
                 >
                     Preview

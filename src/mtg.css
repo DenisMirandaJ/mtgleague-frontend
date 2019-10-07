@@ -1342,9 +1342,7 @@
     margin-bottom: 0 !important
 }
 
-.textarea {
-    white-space: pre-wrap;
-}
+
 
 #radial {
     display: block;
@@ -1364,14 +1362,6 @@
     user-select: none;
   }
   
-  /* Hide the browser's default radio button */
-  .container input {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    height: 0;
-    width: 0;
-  }
   
   /* Create a custom radio button */
   .checkmark {
