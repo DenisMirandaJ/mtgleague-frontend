@@ -24,6 +24,7 @@ export class DeckEditor extends React.Component {
             showProxyErrorAlert: false,
             playernames: [],
             playername: '',
+            submitButtonActive: false,
             showSpinner: false,
             validate: {
                 mainDeckField: true,
@@ -170,7 +171,8 @@ export class DeckEditor extends React.Component {
         this.setState({
             deckName: this.deckName.current.value,
             showAlert: false,
-            showEditErrorAlert: false
+            showEditErrorAlert: false,
+            submitButtonActive: true
         })
     }
 
@@ -330,7 +332,6 @@ export class DeckEditor extends React.Component {
     }
 
     saveDeckData() {
-        console.log(this.state)
         let isFormValid = this.validate()
         if (!isFormValid) {
             return
@@ -356,14 +357,17 @@ export class DeckEditor extends React.Component {
             postBody
         ).then((res) => {
             this.setState({
-                showAlert: true
+                showAlert: true,
+                submitButtonActive: false
             })
         }).catch((err) => {
             if (err.response.data.error.name == 'UserAlreadyExistError') {
                 this.setState({
                     showEditErrorAlert: true,
-                    errorMsg: 'Invalid password, if you\'ve forgotten your password contact the admins at elomtg@protonmail.com'
+                    errorMsg: 'Invalid password, if you\'ve forgotten your password contact the admins at elomtg@protonmail.com',
+                    submitButtonActive: false
                 })
+                
             }
         })
     }
@@ -521,6 +525,7 @@ export class DeckEditor extends React.Component {
                     color='primary'
                     size="lg"
                     onClick={this.saveDeckData.bind(this)}
+                    disabled={this.state.submitButtonActive}
                     block
                 >
                     Submit
