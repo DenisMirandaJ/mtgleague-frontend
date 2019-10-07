@@ -195,7 +195,7 @@ export class DeckEditor extends React.Component {
             sideDeckScryfallPostParameters.identifier === []) {
             return
         }
-        3
+        
         axios.post(
             'https://api.scryfall.com/cards/collection',
             mainDeckScryfallPostParameters
