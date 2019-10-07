@@ -525,7 +525,7 @@ export class DeckEditor extends React.Component {
                     color='primary'
                     size="lg"
                     onClick={this.saveDeckData.bind(this)}
-                    disabled={this.state.submitButtonActive}
+                    disabled={!this.state.submitButtonActive}
                     block
                 >
                     Submit
